@@ -17,14 +17,27 @@ let port = process.env.PORT || 8080;
 // ROUTES FOR OUR API
 let router = express.Router();
 
+// middleware for logging
+router.use((req,res,next) => {
+    console.log(res);
+    next();
+});
+
 // test
 router.get('/', (req, res) => {
     res.json({message: 'welcome to our API'});
 });
 
+// routes ending in /imgs
+router.route('/imgs')
+
+    // get all images from db
+    .get((req, res) => {
+        
+    });
+
 // register routes
 app.use('/api', router);
-
 
 // Start the server
 app.listen(port);
