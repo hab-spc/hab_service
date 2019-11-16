@@ -4,9 +4,29 @@
  */
 
 // package imports
-let express = require('express');
-let app = express();
-let bodyParser = require('body-parser');
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+
+// db utils
+const sqlite3 = require('sqlite3').verbose();
+const openDB = (dbPath) => {
+    let db = new sqlite3.Database(dbPath, (err) => {
+        if (err) {
+            return console.error(err.message);
+        }
+        console.log('Connected to the in-memory SQlite database.');
+    });
+    return db;
+}
+
+const closeDB = (db) => {
+    db.close((err) => {
+        if (err) {
+          return console.error(err.message);
+        }
+      });
+};
 
 // configure app to use bodyParser()
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -28,49 +48,31 @@ router.get('/', (req, res) => {
     res.json({message: 'welcome to our API'});
 });
 
-// routes ending in /imgs
-router.route('/imgs')
-
-    // get all images from db
-    .get((req, res) => {
-        
-    });
-
 // register routes
 app.use('/api', router);
 
-const sqlite3 = require('sqlite3').verbose();
-const openDB = (dbPath) => {
-    let db = new sqlite3.Database(dbPath, (err) => {
-        if (err) {
-        return console.error(err.message);
-        }
-        console.log('Connected to the in-memory SQlite database.');
-    });
-    return db;
-}
-
-const closeDB = (db) => {
-    db.close((err) => {
-        if (err) {
-          return console.error(err.message);
-        }
-      });
-};
-
 // get images for that date time range from the db
+// date: yyyy-mm-dd
+// time: hh:mm:ss
 router.get('/api/imgs/:date', (req, res) => {
+
+    // process the dateTime string
+    const dateTime = req.params.date;
+    const [dStart, dEnd, tStart, tEnd] = dateTime.split(" ");
+
+    // query database for that range
     const db = openDB(dbPath);
-    const sql = 'SELECT DISTINCT IMG_FNAME FROM IMAGES WHERE IMG_DATE = ?';
-    const params = [req.params.date];
-    db.get(sql, params, (err, row) => {
+    const sql = 'SELECT * FROM IMAGES WHERE image_date > ? AND image_date < ? AND image_time > ? AND image_time < ?';
+    const params = "";
+
+    db.all(sql, params, (err, rows) => {
         if (err) {
           res.status(400).json({"error":err.message});
           return;
         }
         res.json({
             "message":"success",
-            "data":row
+            "data":rows
         })
     });
     closeDB(db);
