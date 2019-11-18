@@ -73,6 +73,26 @@ app.get('/api/imgs/:date', (req, res) => {
     closeDB(db);
 });
 
+// post annotations to db
+app.post('/api/annot', (req, res) => {
+
+    // for every img id, add annotation to db
+    const db = openDB(dbPath);
+    const sql = `UPDATE date_sampled SET annot_human_label = ${req.data.class} WHERE image_id = ?`
+
+    // run query
+    db.run(sql, req.data.imgs, (err) => {
+        if (err) {
+            res.status(400).json({"error": err.message});
+            console.log(err.message);
+            return;
+        }
+        res.json({"updates" : this.changes});
+        console.log(`Rows Updated: ${this.changes}`);
+    });
+    closeDB(db);
+});
+
 
 // Start the server
 app.listen(port);
