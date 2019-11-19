@@ -81,7 +81,8 @@ app.post('/api/annot', (req, res) => {
 
     // for every img id, add annotation to db
     const db = openDB(dbPath);
-    const sql = `UPDATE date_sampled SET annot_human_label="${req.body.class}" WHERE image_id=?`
+    console.log(req.body.class);
+    const sql = `UPDATE date_sampled SET ml_user_labels="${req.body.class}" WHERE image_id=?`
 
     // run query
     req.body.imgs.forEach(elem => {
@@ -94,7 +95,8 @@ app.post('/api/annot', (req, res) => {
             console.log(`Rows Updated: ${this.changes}`);
         });
     });
-    
+
+    res.status(200).send({'message': "success"});
     closeDB(db);
 });
 
