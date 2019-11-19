@@ -8,6 +8,7 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const utils = require('./utils/util.js');
 
 const dbPath = "./test.db"
 
@@ -93,6 +94,15 @@ app.post('/api/annot', (req, res) => {
     });
     
     closeDB(db);
+});
+
+// get classList
+app.get('/api/annot-list', (req, res) => {
+
+    utils.readJsonFile("../data_models/annotClasses.json", (data) => {
+        res.json(data);
+        console.log(data);
+    });
 });
 
 
