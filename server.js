@@ -9,9 +9,10 @@ const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const utils = require('./utils/util.js');
-const fs = require('fs');
 
-const dbPath = "./test.db"
+// path constants
+const dbPath = "./test.db";
+const classListPath = "../data_models/annotClasses.json";
 
 // db utils
 const sqlite3 = require('sqlite3').verbose();
@@ -101,7 +102,7 @@ app.post('/api/annot', (req, res) => {
 app.get('/api/annot-list/', (req, res) => {
 
     // read json for current classList
-    utils.readJsonFile("../data_models/annotClasses.json", (data) => {
+    utils.readJsonFile(classListPath, (data) => {
         res.json(data);
         console.log(data);
     });
@@ -113,14 +114,14 @@ app.post('/api/annot-list/:newClass', (req, res) => {
     const newClass = req.params.newClass;
 
     // read json for current classList
-    utils.readJsonFile("../data_models/annotClasses.json", (data) => {
+    utils.readJsonFile(classListPath, (data) => {
         // add to list, and write to file
         data.classList.push(newClass);
         utils.writeToJsonFile(
-            "../data_models/annotClasses.json", 
+            classListPath, 
             JSON.stringify(data),
-            () => {
-                res.status(200);
+            (data) => {
+                res.json(data);
                 console.log("done writing");
             });
     });

@@ -15,7 +15,7 @@ var writeJson = (path, jsonContent, cb) => {
         console.log("An error occured while writing JSON Object to File.");
         console.log(err);
       } else {
-        cb();
+        cb(JSON.parse(jsonContent));
       }
     });
   }
