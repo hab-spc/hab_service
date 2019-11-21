@@ -54,12 +54,12 @@ app.get('/', (req, res) => {
 app.get('/api/imgs/:date', (req, res) => {
 
     // process the dateTime string
-    const dateTime = req.params.date;
-    const params = dateTime.split(" ");
+    const date = req.params.date;
+    const params = date.split(" ");
 
     // query database for that range
     const db = openDB(dbPath);
-    const sql = 'SELECT * FROM date_sampled WHERE image_date >= ? AND image_date < ? AND image_time >= ? AND image_time < ?';
+    const sql = 'SELECT * FROM date_sampled WHERE image_date >= ? AND image_date < ?';
 
     db.all(sql, params, (err, rows) => {
         if (err) {
