@@ -11,27 +11,27 @@ const cors = require('cors');
 const utils = require('./utils/util.js');
 
 // path constants
-const dbPath = "./test.db";
-const classListPath = "../data_models/annotClasses.json";
+const dbPath = './test.db';
+const classListPath = '../data_models/annotClasses.json';
 
 // db utils
 const sqlite3 = require('sqlite3').verbose();
-const openDB = (dbPath) => {
-    let db = new sqlite3.Database(dbPath, (err) => {
-        if (err) {
-            return console.error(err.message);
-        }
-        console.log('Connected to the in-memory SQlite database.');
-    });
-    return db;
-}
+const openDB = dbPath => {
+  let db = new sqlite3.Database(dbPath, err => {
+    if (err) {
+      return console.error(err.message);
+    }
+    console.log('Connected to the in-memory SQlite database.');
+  });
+  return db;
+};
 
-const closeDB = (db) => {
-    db.close((err) => {
-        if (err) {
-          return console.error(err.message);
-        }
-      });
+const closeDB = db => {
+  db.close(err => {
+    if (err) {
+      return console.error(err.message);
+    }
+  });
 };
 
 // configure app to use bodyParser()
@@ -74,7 +74,10 @@ app.get('/api/imgs/:date', (req, res) => {
             "data":rows
         });
     });
-    closeDB(db);
+  });
+
+  res.status(200).send({ message: 'success' });
+  closeDB(db);
 });
 
 // post annotations to db
