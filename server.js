@@ -4,46 +4,22 @@
  */
 
 // package imports
-let express = require('express');
-let app = express();
-let bodyParser = require('body-parser');
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const utils = require('./utils/util.js');
 
-// configure app to use bodyParser()
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+// path constants
+const dbPath = "./test.db";
+const classListPath = "../data_models/annotClasses.json";
 
-let port = process.env.PORT || 8080;
-
-// ROUTES FOR OUR API
-let router = express.Router();
-
-// middleware for logging
-router.use((req,res,next) => {
-    console.log(res);
-    next();
-});
-
-// test
-router.get('/', (req, res) => {
-    res.json({message: 'welcome to our API'});
-});
-
-// routes ending in /imgs
-router.route('/imgs')
-
-    // get all images from db
-    .get((req, res) => {
-        
-    });
-
-// register routes
-app.use('/api', router);
-
+// db utils
 const sqlite3 = require('sqlite3').verbose();
 const openDB = (dbPath) => {
     let db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
-        return console.error(err.message);
+            return console.error(err.message);
         }
         console.log('Connected to the in-memory SQlite database.');
     });
@@ -58,46 +34,128 @@ const closeDB = (db) => {
       });
 };
 
+// configure app to use bodyParser()
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(express.static(__dirname + '../../..'));
+
+let port = 3002;
+
+// middleware for allowing CORS
+app.use(cors());
+
+// test
+app.get('/', (req, res) => {
+    res.json({message: 'welcome to our API'});
+});
+
 // get images for that date time range from the db
-router.get('/api/imgs/:date', (req, res) => {
+// date: yyyy-mm-dd
+// time: hh:mm:ss
+app.get('/api/imgs/:date', (req, res) => {
+
+    // process the dateTime string
+    const dateTime = req.params.date;
+    const params = dateTime.split(" ");
+
+    // query database for that range
     const db = openDB(dbPath);
-    const sql = 'SELECT DISTINCT IMG_FNAME FROM IMAGES WHERE IMG_DATE = ?';
-    const params = [req.params.date];
-    db.get(sql, params, (err, row) => {
+    const sql = 'SELECT * FROM date_sampled WHERE image_date >= ? AND image_date < ? AND image_major_axis_length > 0.03 AND image_major_axis_length < 1';
+
+    db.all(sql, params, (err, rows) => {
         if (err) {
           res.status(400).json({"error":err.message});
+          console.log(err.message);
           return;
         }
+        console.log(rows);
         res.json({
             "message":"success",
-            "data":row
-        })
+            "data":rows
+        });
     });
     closeDB(db);
 });
 
-// update annotations for images specified by json object
-router.post("/api/imgs/", (req, res, next) => {
-    const errors=[]
-    const data = {
-        fname: req.body.fname,
-        label: req.body.label
-    }
-    const sql ='INSERT INTO IMAGES (IMG_FNAME, HMN_LBL) VALUES (?,?)'
-    const params =[data.fname, data.label]
-    db.run(sql, params, function (err, result) {
-        if (err){
-            res.status(400).json({"error": err.message})
-            return;
-        }
-        res.json({
-            "message": "success",
-            "data": data,
-            "id" : this.lastID
-        })
+// post annotations to db
+app.post('/api/annot', (req, res) => {
+
+    // for every img id, add annotation to db
+    const db = openDB(dbPath);
+    console.log(req.body.class);
+    const sql = `UPDATE date_sampled SET ml_user_labels="${req.body.class}" WHERE image_id=?`
+
+    // run query
+    req.body.imgs.forEach(elem => {
+        db.run(sql, elem, (err) => {
+            if (err) {
+                res.status(400).json({"error": err.message});
+                console.log(err.message);
+                return;
+            }
+            console.log(`Rows Updated: ${this.changes}`);
+        });
     });
-    closeDB(db)
-})
+
+    res.status(200).send({'message': "success"});
+    closeDB(db);
+});
+
+// post validations to db
+app.post('/api/validate', (req, res) => {
+
+    // for every img id, add annotation to db
+    const db = openDB(dbPath);
+    console.log(req.body.class);
+    const sql = `UPDATE date_sampled SET annot_human_label=1 WHERE image_id=?`;
+
+    // run query
+    req.body.imgs.forEach(elem => {
+        db.run(sql, elem, (err) => {
+            if (err) {
+                res.status(400).json({"error": err.message});
+                console.log(err.message);
+                return;
+            }
+            console.log(`Rows Updated: ${this.changes}`);
+        });
+    });
+
+    res.status(200).send({'message': "success"});
+    closeDB(db);
+});
+
+
+// get classList
+app.get('/api/annot-list/', (req, res) => {
+
+    // read json for current classList
+    utils.readJsonFile(classListPath, (data) => {
+        res.json(data);
+        console.log(data);
+    });
+});
+
+// add a class
+app.post('/api/annot-list/:newClass', (req, res) => {
+    
+    const newClass = req.params.newClass;
+
+    // read json for current classList
+    utils.readJsonFile(classListPath, (data) => {
+        // add to list, and write to file
+        data.classList.push(newClass);
+        utils.writeToJsonFile(
+            classListPath, 
+            JSON.stringify(data),
+            (data) => {
+                res.json(data);
+                console.log("done writing");
+            });
+    });
+});
+
 
 // Start the server
 app.listen(port);
+console.log("listening on " + port);
